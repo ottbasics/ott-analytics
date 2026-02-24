@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>OTTBasics - Dash.js Demo</title>
+        <script src="https://cdn.dashjs.org/latest/dash.all.min.js"></script>
+        <style>
+            body {
+                font-family: "Segoe UI", sans-serif;
+                background: #121212;
+                color: #eee;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding: 20px;
+            }
+            video {
+                width: 100%;
+                max-width: 800px;
+                border: 2px solid #333;
+                border-radius: 8px;
+                background: #000;
+            }
+            .dashboard {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+                margin-top: 20px;
+                width: 100%;
+                max-width: 800px;
+            }
+            .card {
+                background: #1e1e1e;
+                padding: 15px;
+                border-radius: 8px;
+                border-left: 4px solid #cc0000;
+            }
+            .label {
+                font-size: 0.8rem;
+                color: #888;
+                text-transform: uppercase;
+            }
+            .value {
+                font-size: 1.5rem;
+                font-weight: bold;
+                font-family: monospace;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Dash.js + OTT Analytics</h1>
+        <video id="videoPlayer" controls></video>
+
+        <div class="dashboard">
+            <div class="card">
+                <div class="label">Latency</div>
+                <div id="lat" class="value">0.000s</div>
+            </div>
+            <div class="card">
+                <div class="label">Live Gap</div>
+                <div id="gap" class="value">0.000s</div>
+            </div>
+            <div class="card">
+                <div class="label">Buffer</div>
+                <div id="buf" class="value">0.00s</div>
+            </div>
+            <div class="card">
+                <div class="label">Resolution</div>
+                <div id="res" class="value">-</div>
+            </div>
+            <div class="card">
+                <div class="label">Playback Rate</div>
+                <div id="pbRate" class="value">-</div>
+            </div>
+        </div>
+
+        <script type="module">
+            import { OTTAnalytics } from "/dist/index.js";
+
+            // 1. Initialize Dash.js MediaPlayer
+            const url = "https://livesim2.dashif.org/livesim2/chunkdur_1/ato_7/testpic4_8s/Manifest300.mpd";
+            const video = document.querySelector("#videoPlayer");
+            const player = dashjs.MediaPlayer().create();
+
+            // 2. Configure for Low Latency
+            player.updateSettings({
+                streaming: {
+                    lowLatencyEnabled: true,
+                    liveDelay: 3.5, // Target 3.5s latency
+                    liveCatchup: {
+                        enabled: true,
+                        playbackRate: { min: 0.95, max: 1.05 }
+                    }
+                }
+            });
+
+            // 3. Initialize Analytics
+            const analytics = new OTTAnalytics({ debug: true });
+
+            // Attach library to dashjs instance
+            analytics.attach(player, video);
+
+            // UI Updates
+            analytics.onMetrics((metrics) => {
+                const { latency, manifestLiveGap, bufferLevel, resolution, playbackRate } = metrics;
+                document.getElementById("lat").innerText = `${latency.toFixed(3)}s`;
+                document.getElementById("gap").innerText = `${manifestLiveGap.toFixed(3)}s`;
+                document.getElementById("buf").innerText = `${bufferLevel.toFixed(2)}s`;
+                document.getElementById("res").innerText = resolution;
+                document.getElementById("pbRate").innerText = playbackRate;
+            });
+
+            // Start playback
+            player.initialize(video, url, true);
+        </script>
+    </body>
+</html>

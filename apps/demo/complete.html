@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>OTTBasics SDK Sandbox</title>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.compiled.js"></script>
+        <script src="https://cdn.dashjs.org/latest/dash.all.min.js"></script>
+
+        <style>
+            body {
+                font-family: "Segoe UI", sans-serif;
+                background: #121212;
+                color: white;
+                padding: 20px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            .controls-panel {
+                background: #1e1e1e;
+                padding: 20px;
+                border-radius: 8px;
+                margin-bottom: 20px;
+                width: 100%;
+                max-width: 800px;
+                display: flex;
+                gap: 20px;
+                flex-wrap: wrap;
+                border: 1px solid #333;
+            }
+            .group {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            label {
+                font-size: 12px;
+                color: #888;
+                text-transform: uppercase;
+                font-weight: bold;
+            }
+            select,
+            button {
+                padding: 10px;
+                border-radius: 4px;
+                border: none;
+                background: #333;
+                color: white;
+                cursor: pointer;
+            }
+            button#start-btn {
+                background: #0078d4;
+                padding: 10px 30px;
+            }
+
+            .player-wrapper {
+                position: relative;
+                width: 100%;
+                max-width: 800px;
+                aspect-ratio: 16/9;
+                background: #000;
+                border-radius: 8px;
+                overflow: hidden;
+                border: 2px solid #333;
+            }
+            video {
+                width: 100%;
+                height: 100%;
+            }
+
+            .custom-ui-container {
+                margin-top: 20px;
+                width: 100%;
+                max-width: 800px;
+                display: none;
+                background: #1e1e1e;
+                padding: 15px;
+                border-radius: 8px;
+            }
+            .custom-ui-container.visible {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 10px;
+            }
+            .metric-card {
+                text-align: center;
+                border-right: 1px solid #333;
+            }
+            .metric-card:last-child {
+                border-right: none;
+            }
+            .m-val {
+                display: block;
+                font-size: 1.2rem;
+                font-family: monospace;
+                color: #00ff00;
+            }
+            .m-lab {
+                font-size: 10px;
+                color: #777;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>OTTBasics SDK Sandbox</h1>
+
+        <div class="controls-panel">
+            <div class="group">
+                <label>1. Player Engine</label>
+                <select id="engine-select">
+                    <option value="dashjs">Dash.js (v4.x+)</option>
+                    <option value="shaka">Shaka Player (v4.x+)</option>
+                </select>
+            </div>
+            <div class="group">
+                <label>2. UI Mode</label>
+                <select id="ui-select">
+                    <option value="overlay">SDK Built-in Overlay</option>
+                    <option value="custom">External Custom UI</option>
+                    <option value="none">Headless (Console Only)</option>
+                </select>
+            </div>
+            <div class="group" style="justify-content: flex-end">
+                <button id="start-btn">Load Stream</button>
+            </div>
+        </div>
+
+        <div class="player-wrapper" id="video-container">
+            <video id="mainVideo" controls autoplay muted></video>
+        </div>
+
+        <div id="custom-ui" class="custom-ui-container">
+            <div class="metric-card"><span class="m-lab">LATENCY</span><span id="c-lat" class="m-val">-</span></div>
+            <div class="metric-card"><span class="m-lab">LIVE GAP</span><span id="c-gap" class="m-val">-</span></div>
+            <div class="metric-card"><span class="m-lab">BUFFER</span><span id="c-buf" class="m-val">-</span></div>
+            <div class="metric-card"><span class="m-lab">RES</span><span id="c-res" class="m-val">-</span></div>
+        </div>
+
+        <script type="module">
+            import { OTTAnalytics } from "/dist/index.js";
+
+            //const STREAM_URL = "https://livesim2.dashif.org/livesim2/chunkdur_1/ato_7/testpic4_8s/Manifest300.mpd";
+            const STREAM_URL = "https://livesim2.dashif.org/livesim2/chunkdur_1/ato_7/testpic4_8s/Manifest300.mpd";
+
+            let currentAnalytics = null;
+            let dashPlayer = null;
+            let shakaPlayer = null;
+
+            async function cleanup() {
+                if (currentAnalytics) currentAnalytics.detach();
+                if (dashPlayer) {
+                    dashPlayer.destroy();
+                    dashPlayer = null;
+                }
+                if (shakaPlayer) {
+                    await shakaPlayer.destroy();
+                    shakaPlayer = null;
+                }
+
+                // Remove any existing overlay elements
+                const oldOverlay = document.querySelector("ott-diagnostics");
+                if (oldOverlay) oldOverlay.remove();
+
+                document.getElementById("custom-ui").classList.remove("visible");
+            }
+
+            async function start() {
+                await cleanup();
+
+                const engine = document.getElementById("engine-select").value;
+                const uiMode = document.getElementById("ui-select").value;
+                const video = document.getElementById("mainVideo");
+                const container = document.getElementById("video-container");
+
+                // 1. Initialize Analytics
+                currentAnalytics = new OTTAnalytics({ debug: true });
+
+                // 2. Setup chosen engine
+                if (engine === "dashjs") {
+                    dashPlayer = dashjs.MediaPlayer().create();
+                    dashPlayer.updateSettings({ streaming: { lowLatencyEnabled: true, liveDelay: 3 } });
+                    currentAnalytics.attach(dashPlayer, video);
+                    dashPlayer.initialize(video, STREAM_URL, true);
+                } else {
+                    shakaPlayer = new shaka.Player(video);
+                    shakaPlayer.configure({ streaming: { lowLatencyMode: true, autoLowLatencyMode: true } });
+
+                    currentAnalytics.attach(shakaPlayer, video);
+                    await shakaPlayer.load(STREAM_URL);
+                }
+
+                // 3. Setup chosen UI
+                if (uiMode === "overlay") {
+                    currentAnalytics.showOverlay(container);
+                } else if (uiMode === "custom") {
+                    document.getElementById("custom-ui").classList.add("visible");
+                    window.addEventListener("ott-metrics-update", updateCustomUI);
+                }
+            }
+
+            function updateCustomUI(e) {
+                const m = e.detail;
+                document.getElementById("c-lat").innerText = m.latency.toFixed(2) + "s";
+                document.getElementById("c-gap").innerText = m.manifestLiveGap.toFixed(2) + "s";
+                document.getElementById("c-buf").innerText = m.bufferLevel.toFixed(2) + "s";
+                document.getElementById("c-res").innerText = m.resolution;
+            }
+
+            document.getElementById("start-btn").addEventListener("click", start);
+        </script>
+    </body>
+</html>

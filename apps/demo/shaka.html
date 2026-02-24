@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>OTTBasics Analytics Demo</title>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.compiled.js"></script>
+        <style>
+            body {
+                font-family: "Segoe UI", sans-serif;
+                background: #121212;
+                color: #eee;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding: 20px;
+            }
+            video {
+                width: 100%;
+                max-width: 800px;
+                border: 2px solid #333;
+                border-radius: 8px;
+            }
+            .dashboard {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+                margin-top: 20px;
+                width: 100%;
+                max-width: 800px;
+            }
+            .card {
+                background: #1e1e1e;
+                padding: 15px;
+                border-radius: 8px;
+                border-left: 4px solid #0078d4;
+            }
+            .label {
+                font-size: 0.8rem;
+                color: #888;
+                text-transform: uppercase;
+            }
+            .value {
+                font-size: 1.5rem;
+                font-weight: bold;
+                font-family: monospace;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>@ottbasics/ott-analytics Demo</h1>
+        <video id="video" controls autoplay muted></video>
+
+        <div class="dashboard">
+            <div class="card">
+                <div class="label">Wall-Clock Latency</div>
+                <div id="lat" class="value">0.000s</div>
+            </div>
+            <div class="card">
+                <div class="label">Manifest Live Gap</div>
+                <div id="gap" class="value">0.000s</div>
+            </div>
+            <div class="card">
+                <div class="label">Buffer Level</div>
+                <div id="buf" class="value">0.00s</div>
+            </div>
+            <div class="card">
+                <div class="label">Resolution</div>
+                <div id="res" class="value">-</div>
+            </div>
+            <div class="card">
+                <div class="label">Playback Rate</div>
+                <div id="pbRate" class="value">-</div>
+            </div>
+        </div>
+
+        <script type="module">
+            // IMPORTING FROM YOUR BUILD
+            // We go up two levels to reach packages/core/dist
+            import { OTTAnalytics } from "/dist/index.js";
+
+            async function init() {
+                const video = document.getElementById("video");
+                const player = new shaka.Player(video);
+
+                //For LL stream playback
+                player.configure({
+                    streaming: {
+                        // allow the player to start closer to the live edge
+                        lowLatencyMode: true,
+                        // Force the player to stay close to the live edge
+                        autoLowLatencyMode: true
+                    }
+                });
+
+                // Initialize your library with Debug mode on
+                const analytics = new OTTAnalytics({ debug: true, sampleInterval: 500 });
+
+                // Attach to player
+                analytics.attach(player, video);
+
+                // Listen for the events your library emits
+                analytics.onMetrics((metrics) => {
+                    const { latency, manifestLiveGap, bufferLevel, resolution, playbackRate } = metrics;
+
+                    document.getElementById("lat").innerText = `${latency.toFixed(3)}s`;
+                    document.getElementById("gap").innerText = `${manifestLiveGap.toFixed(3)}s`;
+                    document.getElementById("buf").innerText = `${bufferLevel.toFixed(2)}s`;
+                    document.getElementById("res").innerText = resolution;
+                    document.getElementById("pbRate").innerText = playbackRate;
+                });
+
+                try {
+                    // Testing with a public DASH-IF Live Stream
+                    await player.load("https://livesim.dashif.org/livesim/testpic_2s/Manifest.mpd");
+                    // await player.load("https://livesim2.dashif.org/livesim2/chunkdur_1/ato_7/testpic4_8s/Manifest300.mpd");
+                    console.log("Stream Loaded Successfully");
+                } catch (e) {
+                    console.error("Error loading stream", e);
+                }
+            }
+
+            document.addEventListener("DOMContentLoaded", init);
+        </script>
+    </body>
+</html>

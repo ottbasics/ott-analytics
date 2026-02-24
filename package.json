@@ -1,0 +1,58 @@
+{
+    "name": "@ottbasics/ott-analytics",
+    "version": "0.1.0",
+    "description": "High performance QoE-QoS analytics engine for DASH/HLS, optimized for Low Latency (LL) workflows",
+    "type": "module",
+    "author": "OTT Basics",
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "import": {
+                "types": "./dist/index.d.ts",
+                "default": "./dist/index.js"
+            },
+            "require": {
+                "types": "./dist/index.d.ts",
+                "default": "./dist/index.cjs"
+            }
+        }
+    },
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsup packages/core/src/index.ts --format esm,cjs --dts --clean --minify",
+        "build:debug": "tsup packages/core/src/index.ts --format esm,cjs --dts --clean --sourcemap",
+        "dev": "tsup packages/core/src/index.ts --format esm --watch --dts",
+        "lint": "tsc --noEmit"
+    },
+    "keywords": [
+        "video",
+        "ott",
+        "analytics",
+        "dash",
+        "hls",
+        "low-latency",
+        "shaka-player",
+        "dashjs"
+    ],
+    "peerDependencies": {
+        "shaka-player": "^4.0.0",
+        "dashjs": "^4.0.0"
+    },
+    "peerDependenciesMeta": {
+        "shaka-player": {
+            "optional": true
+        },
+        "dashjs": {
+            "optional": true
+        }
+    },
+    "devDependencies": {
+        "tsup": "^8.5.1",
+        "typescript": "^5.9.3",
+        "vitest": "^4.0.18"
+    }
+}
