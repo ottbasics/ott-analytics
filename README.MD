@@ -28,28 +28,7 @@ A lightweight, framework-agnostic analytics SDK for modern OTT web players.
 npm install @ottbasics/ott-analytics
 ```
 
-### 2. Basic Usage
-
-Use this if you want the data without the visual overlay:
-
-```javascript
-import { OTTAnalytics } from "@ottbasics/ott-analytics";
-
-const video = document.getElementById("my-video");
-const player = new shaka.Player(video);
-
-const analytics = new OTTAnalytics({ debug: true });
-
-// Attach to the player instance
-analytics.attach(player, video);
-
-// Listen for normalized updates
-analytics.onMetrics((metrics) => {
-    console.log(`Latency: ${metrics.latency}s | Buffer: ${metrics.bufferLevel}s`);
-});
-```
-
-### 3. Usage with Visual Overlay
+### 2. Basic Usage with Visual Overlay
 
 Use this if you want the built-in UI for showing the analytics.
 
@@ -59,7 +38,7 @@ import { OTTAnalytics } from "@ottbasics/ott-analytics";
 const video = document.getElementById("my-video");
 const player = new shaka.Player(video);
 
-const analytics = new OTTAnalytics({ debug: true });
+const analytics = new OTTAnalytics({ debug: true, speedTest: { interval: 5000 } });
 
 // Attach to the player instance
 analytics.attach(player, video);
@@ -71,10 +50,11 @@ analytics.onMetrics((metrics) => {
 
 //The parent element to which the UI overlay should be attached
 const container = document.getElementById("video-container");
+
 analytics.showOverlay(container);
 ```
 
-## Why Web Components?
+## Diagnostics UI
 
 The diagnostic UI is built using native **Custom Elements** to ensure maximum compatibility.
 
@@ -87,14 +67,16 @@ The diagnostic UI is built using native **Custom Elements** to ensure maximum co
 
 The SDK normalizes all player data into a consistent object format for easy monitoring:
 
-| Property              | Type      | Description                                           |
-| :-------------------- | :-------- | :---------------------------------------------------- |
-| **`latency`**         | `number`  | End-to-end latency in seconds.                        |
-| **`manifestLiveGap`** | `number`  | Distance from current playhead to manifest live edge. |
-| **`bufferLevel`**     | `number`  | Current forward buffer in seconds.                    |
-| **`resolution`**      | `string`  | Current playback resolution (e.g., `"1920x1080"`).    |
-| **`isLowLatency`**    | `boolean` | Whether the player is in Low Latency mode.            |
-| **`playbackRate`**    | `number`  | Playback rate of the video element.                   |
+| Property              | Type      | Description                                                                          |
+| :-------------------- | :-------- | :----------------------------------------------------------------------------------- |
+| **`latency`**         | `number`  | End-to-end latency in seconds.                                                       |
+| **`manifestLiveGap`** | `number`  | Distance from current playhead to manifest live edge.                                |
+| **`bufferLevel`**     | `number`  | Current forward buffer in seconds.                                                   |
+| **`resolution`**      | `string`  | Playback rate of the video elementCurrent playback resolution (e.g., `"1920x1080"`). |
+| **`isLowLatency`**    | `boolean` | Whether the player is in Low Latency mode.                                           |
+| **`playbackRate`**    | `number`  | Playback rate of the video element.                                                  |
+| **`playerState`**     | `string`  | Player state - paused or playing.                                                    |
+| **`networkSpeed`**    | `number`  | Network Speed in bps.                                                                |
 
 ---
 

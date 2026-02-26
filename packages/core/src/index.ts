@@ -45,25 +45,25 @@ export class OTTAnalytics {
     }
 
     public showOverlay(parentElement: HTMLElement = document.body): void {
-        if (!this.uiElement) {
-            this.uiElement = document.createElement("ott-diagnostics") as OTTDiagnostics;
-            parentElement.appendChild(this.uiElement);
-
-            // Listen for our own metrics to update the UI
-            this.onMetrics((metrics) => {
-                if (this.uiElement) {
-                    this.uiElement.update(metrics);
-                }
-            });
-        }
-    }
-
-    public hideOverlay() {
+        //Remove any existing overlay
         const uiElement = document.querySelector("ott-diagnostics");
         if (uiElement) {
             uiElement.remove();
         }
+
+        //Create a new overlay
+        this.uiElement = document.createElement("ott-diagnostics") as OTTDiagnostics;
+        parentElement.appendChild(this.uiElement);
+
+        // Listen for our own metrics to update the UI
+        this.onMetrics((metrics) => {
+            if (this.uiElement) {
+                this.uiElement.update(metrics);
+            }
+        });
     }
+
+    public hideOverlay() {}
 
     /**
      * Attaches the analytics engine to a supported player instance.

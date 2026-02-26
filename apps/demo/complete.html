@@ -188,8 +188,6 @@
 
                 // 3. Setup chosen UI
                 if (uiMode === "overlay") {
-                    // Remove any existing overlay elements
-                    currentAnalytics.hideOverlay();
                     currentAnalytics.showOverlay(container);
                 } else if (uiMode === "custom") {
                     document.getElementById("custom-ui").classList.add("visible");
