@@ -2,8 +2,18 @@ import { PlayerAdapter, VideoMetrics } from "../types.js";
 
 export class DashjsAdapter implements PlayerAdapter {
     public name = "dashjs";
+    private lastRepresentation: any = null;
 
-    constructor(private player: any, private video: HTMLVideoElement) {}
+    constructor(private player: any, private video: HTMLVideoElement) {
+        player.on("representationSwitch", (e: any) => {
+            if (e.mediaType === "video") {
+                const width = e.currentRepresentation?.width;
+                const height = e.currentRepresentation?.height;
+                const bitrate = e.currentRepresentation?.bitrateInKbit;
+                this.lastRepresentation = { width, height, bitrate };
+            }
+        });
+    }
 
     public getMetrics(): VideoMetrics {
         const dashMetrics = this.player.getDashMetrics();
@@ -19,43 +29,18 @@ export class DashjsAdapter implements PlayerAdapter {
             manifestLiveGap = Math.max(0, liveEdge - curTime);
         }
 
-        const metrics = {
+        const metrics: VideoMetrics = {
             latency: this.player.getCurrentLiveLatency() || 0,
             manifestLiveGap: manifestLiveGap,
             bufferLevel: this.player.getBufferLength("video") || 0,
             isLowLatency: this.player.getSettings().streaming.lowLatencyEnabled || false,
             bandwidth: (this.player.getAverageThroughput("video") || 0) * 1000,
-            resolution: this.getResolution(),
+            representation: this.lastRepresentation,
             playbackRate: this.video.playbackRate,
             playerState: this.video.paused ? "Paused" : "Playing",
             drift: 0
         };
         return metrics;
-    }
-
-    private getResolution(): string {
-        try {
-            // 1. Get the stream info for the current period
-            const streamInfo = this.player.getActiveStream ? this.player.getActiveStream().getStreamInfo() : null;
-            if (!streamInfo) return "0x0";
-
-            // 2. Get the list of available bitrates/qualities for video
-            const bitrates = this.player.getBitrateInfoListFor("video");
-
-            // 3. Get the index of the quality currently being played
-            const activeIndex = this.player.getQualityFor("video");
-
-            // 4. Match the index to the bitrate metadata
-            const currentBitrate = bitrates && bitrates[activeIndex];
-
-            if (currentBitrate && currentBitrate.width && currentBitrate.height) {
-                return `${currentBitrate.width}x${currentBitrate.height}`;
-            }
-        } catch (e) {
-            // If anything fails during the handoff, fail silently to keep the heartbeat alive
-            return "0x0";
-        }
-        return "0x0";
     }
 
     public destroy(): void {}

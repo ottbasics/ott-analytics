@@ -18,9 +18,9 @@ export interface VideoMetrics {
     isLowLatency: boolean;
     bandwidth: number;
     playbackRate: number;
-    resolution: string;
     playerState?: string;
     networkSpeed?: number;
+    representation?: any;
 }
 
 export interface PlayerAdapter {

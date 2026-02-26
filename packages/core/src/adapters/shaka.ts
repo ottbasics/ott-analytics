@@ -26,7 +26,7 @@ export class ShakaAdapter implements PlayerAdapter {
             bufferLevel: this.getBuffer(),
             isLowLatency: this.detectLL(),
             bandwidth: this.player.getStats().estimatedBandwidth || 0,
-            resolution: this.getResolution(),
+            // resolution: this.getResolution(),
             playbackRate: this.video.playbackRate,
             playerState: this.video.paused ? "Paused" : "Playing",
             drift: 0 // Typically calculated by comparing playhead to a sync source
