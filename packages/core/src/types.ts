@@ -19,6 +19,8 @@ export interface VideoMetrics {
     bandwidth: number;
     playbackRate: number;
     resolution: string;
+    playerState?: string;
+    networkSpeed?: number;
 }
 
 export interface PlayerAdapter {

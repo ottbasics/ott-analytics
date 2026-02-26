@@ -4,9 +4,15 @@ import { VideoMetrics, PlayerAdapter } from "./types.js";
 import "./ui/Overlay.js";
 import { OTTDiagnostics } from "./ui/Overlay.js";
 
+export interface SpeedTestConfig {
+    url?: string; // Optional URL to a known file for speed testing (e.g., a small image or text file on the same server)
+    interval?: number; // How often to check for network speed (in millis)
+}
+
 export interface AnalyticsConfig {
     debug?: boolean;
-    sampleInterval?: number; // How often to poll metrics (in ms)
+    sampleInterval?: number; // How often to poll metrics (in millis)
+    speedTest?: SpeedTestConfig;
 }
 
 type MetricsListener = (metrics: VideoMetrics) => void;
@@ -20,8 +26,10 @@ export class OTTAnalytics {
     private listeners: MetricsListener[] = [];
     private adapter: PlayerAdapter | null = null;
     private intervalId: any = null;
+    private speedTestIntervalId: any = null;
     private config: AnalyticsConfig;
     private uiElement: OTTDiagnostics | null = null;
+    private lastMeasuredSpeed: number = 0; // New: Stores the last bps result
 
     constructor(config: AnalyticsConfig = {}) {
         this.config = {
@@ -50,6 +58,13 @@ export class OTTAnalytics {
         }
     }
 
+    public hideOverlay() {
+        const uiElement = document.querySelector("ott-diagnostics");
+        if (uiElement) {
+            uiElement.remove();
+        }
+    }
+
     /**
      * Attaches the analytics engine to a supported player instance.
      * Uses duck-typing to detect if the player is Shaka or Dash.js.
@@ -75,6 +90,11 @@ export class OTTAnalytics {
 
         // 3. Start the polling heartbeat
         this.startHeartbeat();
+
+        // 4. Optionally start the speed test timer
+        if (this.config.speedTest?.interval) {
+            this.startSpeedTestTimer();
+        }
     }
 
     private isShaka(p: any): boolean {
@@ -90,7 +110,12 @@ export class OTTAnalytics {
             if (!this.adapter) return;
 
             try {
-                const metrics: VideoMetrics = this.adapter.getMetrics();
+                const playerMetrics = this.adapter.getMetrics();
+
+                const metrics: VideoMetrics = {
+                    ...playerMetrics,
+                    networkSpeed: this.lastMeasuredSpeed
+                };
 
                 if (this.config.debug) {
                     console.debug("[OTTBasics Update]", metrics);
@@ -120,6 +145,45 @@ export class OTTAnalytics {
     }
 
     /**
+     * Performs a one-time "Burst" speed test to measure raw capacity.
+     * We use a 5MB chunk to ensure the TCP window opens up enough for accuracy.
+     */
+    public async runSpeedTest(): Promise<number> {
+        const testUrl = this.config.speedTest?.url || `https://speed.cloudflare.com/__down?bytes=5000000&cb=${Date.now()}`;
+
+        const start = performance.now();
+        try {
+            const response = await fetch(testUrl);
+            const buffer = await response.arrayBuffer();
+            const end = performance.now();
+
+            const durationSec = (end - start) / 1000;
+            const bits = buffer.byteLength * 8;
+            const bps = bits / durationSec;
+
+            return bps;
+        } catch (e) {
+            console.error("Manual speed test failed", e);
+            return 0;
+        }
+    }
+
+    private async startSpeedTestTimer(): Promise<void> {
+        let interval = this.config.speedTest?.interval || 0;
+        if (interval > 0) {
+            interval = Math.max(5000, interval); // Minimum 5 seconds to avoid spamming
+            this.speedTestIntervalId = setInterval(async () => {
+                const speed = await this.runSpeedTest();
+                this.lastMeasuredSpeed = speed;
+                if (this.config.debug) {
+                    console.debug(`[OTTBasics] Speed Test Result: ${speed.toFixed(2)} bps`);
+                }
+                // Optionally, you could emit this as a separate event or include it in the regular metrics
+            }, interval);
+        }
+    }
+
+    /**
      * Stops the heartbeat and clears references.
      * Call this when the player is destroyed to avoid memory leaks.
      */
@@ -129,10 +193,19 @@ export class OTTAnalytics {
             this.intervalId = null;
         }
 
+        if (this.speedTestIntervalId) {
+            clearInterval(this.speedTestIntervalId);
+            this.speedTestIntervalId = null;
+        }
+
         if (this.adapter) {
             this.adapter.destroy();
             this.adapter = null;
         }
+
+        // Clear listeners and reset speed
+        this.listeners = [];
+        this.lastMeasuredSpeed = 0;
 
         if (this.config.debug) {
             console.log("[OTTBasics] Analytics detached.");

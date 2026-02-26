@@ -27,6 +27,7 @@ export class DashjsAdapter implements PlayerAdapter {
             bandwidth: (this.player.getAverageThroughput("video") || 0) * 1000,
             resolution: this.getResolution(),
             playbackRate: this.video.playbackRate,
+            playerState: this.video.paused ? "Paused" : "Playing",
             drift: 0
         };
         return metrics;

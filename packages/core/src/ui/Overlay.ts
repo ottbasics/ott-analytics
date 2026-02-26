@@ -19,9 +19,9 @@ export class OTTDiagnostics extends HTMLElement {
             font-family: 'Courier New', monospace;
             padding: 12px;
             border-radius: 4px;
-            font-size: 12px;
+            font-size: 1.2rem;
             border: 1px solid #444;
-            min-width: 180px;
+            min-width: 300px;
           }
           .metric { display: flex; justify-content: space-between; margin-bottom: 4px; }
           .label { color: #aaa; margin-right: 10px; }
@@ -35,6 +35,8 @@ export class OTTDiagnostics extends HTMLElement {
           <div class="metric"><span class="label">Buffer:</span><span id="buf" class="value">-</span></div>
           <div class="metric"><span class="label">Resolution:</span><span id="res" class="value">-</span></div>
           <div class="metric"><span class="label">Playback Rate:</span><span id="pbRate" class="value">-</span></div>
+          <div class="metric"><span class="label">Player State:</span><span id="playerState" class="value">-</span></div>
+          <div class="metric"><span class="label">Network Speed:</span><span id="speed" class="value">-</span></div>
         </div>
       `;
         this.container = this.shadowRoot!.querySelector(".stats-box")!;
@@ -46,6 +48,23 @@ export class OTTDiagnostics extends HTMLElement {
         this.shadowRoot!.getElementById("buf")!.innerText = `${metrics.bufferLevel.toFixed(2)}s`;
         this.shadowRoot!.getElementById("res")!.innerText = metrics.resolution;
         this.shadowRoot!.getElementById("pbRate")!.innerText = (metrics.playbackRate || 0).toFixed(3);
+        this.shadowRoot!.getElementById("playerState")!.innerText = metrics.playerState;
+
+        const speedBps = metrics.networkSpeed || 0;
+        if (speedBps >= 0) {
+            let speedStr = null;
+            if (speedBps > 1000 * 1000) {
+                speedStr = `${(metrics.networkSpeed / (1000 * 1000)).toFixed(1)}Mbps`;
+            } else if (speedBps > 1000) {
+                speedStr = `${(metrics.networkSpeed / 1000).toFixed(1)}Kbps`;
+            } else {
+                speedStr = `${metrics.networkSpeed.toFixed(1)}bps`;
+            }
+            this.shadowRoot!.getElementById("speed")!.innerText = speedStr;
+        } else {
+            //Hide Network Speed if not available
+            this.shadowRoot!.getElementById("speed")!.remove();
+        }
     }
 }
 

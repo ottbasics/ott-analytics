@@ -28,6 +28,7 @@ export class ShakaAdapter implements PlayerAdapter {
             bandwidth: this.player.getStats().estimatedBandwidth || 0,
             resolution: this.getResolution(),
             playbackRate: this.video.playbackRate,
+            playerState: this.video.paused ? "Paused" : "Playing",
             drift: 0 // Typically calculated by comparing playhead to a sync source
         };
 
