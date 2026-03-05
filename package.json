@@ -1,6 +1,10 @@
 {
     "name": "@ottbasics/ott-analytics",
-    "version": "0.1.5",
+    "version": "0.1.6",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/ottbasics/ott-analytics.git"
+    },
     "description": "High performance QoE-QoS analytics engine for DASH/HLS, optimized for Low Latency (LL) workflows",
     "type": "module",
     "author": "OTT Basics",

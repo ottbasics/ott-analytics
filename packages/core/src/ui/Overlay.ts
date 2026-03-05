@@ -31,7 +31,7 @@ export class OTTDiagnostics extends HTMLElement {
         <div class="stats-box">
           <div class="title">OTTBasics Debug</div>
           <div class="metric"><span class="label">WallClock Latency:</span><span id="lat" class="value">-</span></div>
-          <div class="metric"><span class="label">Manifest Gap:</span><span id="gap" class="value">-</span></div>
+          <div class="metric"><span class="label">Manifest Latency:</span><span id="gap" class="value">-</span></div>
           <div class="metric"><span class="label">Buffer:</span><span id="buf" class="value">-</span></div>
           <div class="metric"><span class="label">Resolution:</span><span id="res" class="value">-</span></div>
           <div class="metric"><span class="label">Playback Rate:</span><span id="pbRate" class="value">-</span></div>

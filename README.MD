@@ -40,6 +40,9 @@ const player = new shaka.Player(video);
 
 const analytics = new OTTAnalytics({ debug: true, speedTest: { interval: 5000 } });
 
+//If you want to enable Network Speed too (use it cautiously, e.g. interval: 10000 as it is a heavy task)
+//const analytics = new OTTAnalytics({ debug: true, speedTest: { interval: 5000 } });
+
 // Attach to the player instance
 analytics.attach(player, video);
 
@@ -88,3 +91,5 @@ To avoid memory leaks, especially on memory-constrained devices like **Smart TVs
 // Detach the analytics instance and clean up listeners
 analytics.detach();
 ```
+
+![App Screenshot](https://raw.githubusercontent.com/ottbasics/ott-analytics/main/docs/images/analytics.png)
