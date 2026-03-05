@@ -92,4 +92,6 @@ To avoid memory leaks, especially on memory-constrained devices like **Smart TVs
 analytics.detach();
 ```
 
+## Sample Screenshot
+
 ![App Screenshot](https://raw.githubusercontent.com/ottbasics/ott-analytics/main/docs/images/analytics.png)
